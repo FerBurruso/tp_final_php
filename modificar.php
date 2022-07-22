@@ -23,24 +23,35 @@ if($_POST){
     #debemos recuperar la imagen actual y borrarla del servidor para lugar pisar con la nueva imagen en el server y en la base de datos
     #recuperamos la imagen de la base antes de borrar
     $conexion = new conexion(); 
-    $imagen = $conexion->consultar("select imagen FROM  `proyectos` where id=".$id);
-    #la borramos de la carpeta 
-    unlink("imagenes/".$imagen[0]['imagen']);
     #levantamos los datos del formulario
     $nombre_proyecto = $_POST['nombre'];
     $descripcion = $_POST['descripcion'];
     $direccion= $_POST['direccion'];
+   
+    /*manejo de la imagen*/ 
     #nombre de la imagen
     $imagen = $_FILES['archivo']['name'];
-    #tenemos que guardar la imagen en una carpeta 
-    $imagen_temporal=$_FILES['archivo']['tmp_name'];
-    #creamos una variable fecha para concatenar al nombre de la imagen, para que cada imagen sea distinta y no se pisen 
-    $fecha = new DateTime();
-    $imagen= $fecha->getTimestamp()."_".$imagen;
-    move_uploaded_file($imagen_temporal,"imagenes/".$imagen);
-    #creo una instancia(objeto) de la clase de conexion
-    $conexion = new conexion();
-    $sql = "UPDATE `proyectos` SET `nombre` = '$nombre_proyecto' , `imagen` = '$imagen', `descripcion` = '$descripcion', `direccion` = '$direccion' WHERE `proyectos`.`id` = '$id';";
+
+    if ($imagen == "") { 
+        /*si no seleccionó ninguna imagen no actualizo*/
+        $sql = "UPDATE `proyectos` SET `nombre` = '$nombre_proyecto', `descripcion` = '$descripcion', `direccion` = '$direccion' WHERE `proyectos`.`id` = '$id';";
+
+    }
+    else
+    {
+        $imagen = $conexion->consultar("select imagen FROM  `proyectos` where id=".$id);
+        #la borramos de la carpeta 
+        unlink("imagenes/".$imagen[0]['imagen']);
+        #tenemos que guardar la imagen en una carpeta 
+        $imagen_temporal=$_FILES['archivo']['tmp_name'];
+        #creamos una variable fecha para concatenar al nombre de la imagen, para que cada imagen sea distinta y no se pisen 
+        $fecha = new DateTime();
+        $imagen= $fecha->getTimestamp()."_".$imagen;
+        move_uploaded_file($imagen_temporal,"imagenes/".$imagen);
+        #creo una instancia(objeto) de la clase de conexion
+        $sql = "UPDATE `proyectos` SET `nombre` = '$nombre_proyecto' , `imagen` = '$imagen', `descripcion` = '$descripcion', `direccion` = '$direccion' WHERE `proyectos`.`id` = '$id';";
+    }
+
     $id_proyecto = $conexion->ejecutar($sql);
 
     header("location:index.php");
