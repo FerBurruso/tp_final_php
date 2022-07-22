@@ -1,11 +1,13 @@
 <?php class conexion{
     #atributos que son propios del objeto
-    private $servidor ="localhost";
-    private $usuario ="root";
-    private $pass = "";
+    private $servidor ="us-cdbr-east-06.cleardb.net";
+    private $usuario ="be1962f9d6c3a2";
+    private $pass = "ee992adc";
     private $conexion;#objeto de tipo pdo, de la clase propia de php
-    private $base = "proyecto";
-   
+    private $base = "heroku_2556fb658fb2b23";
+    /*mysql://be1962f9d6c3a2:ee992adc@us-cdbr-east-06.cleardb.net/heroku_2556fb658fb2b23?reconnect=true
+     */
+
     public function __construct(){
         try{
             $this->conexion = new PDO("mysql:host=$this->servidor;dbname=$this->base",$this->usuario,$this->pass);
