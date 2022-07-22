@@ -1,4 +1,7 @@
-<?php include 'base/conexion.php'; ?>
+<?php include 'base/conexion.php'; 
+include 'api_google/vendor/autoload.php';
+putenv('GOOGLE_APPLICATION_CREDENTIALS=api_google/portfolio-357107-8e5c312175e3.json');
+?>
 <?php $conexion = new conexion();
  $proyectos= $conexion->consultar("SELECT * FROM `proyectos`");?>
  <?php ob_start(); #esto evita los errores de envios de headers
@@ -14,7 +17,11 @@ session_start(); #inicializamos variables de sesion
 $nombre_proyecto = $_POST['nombre'];
 $descripcion = $_POST['descripcion'];
 $direccion = $_POST['direccion'];
+$errores = "";
+
+/*manejo de imagenes local*/ 
 #nombre de la imagen
+/*
 $imagen = $_FILES['archivo']['name'];
 #tenemos que guardar la imagen en una carpeta 
 $imagen_temporal=$_FILES['archivo']['tmp_name'];
@@ -23,11 +30,44 @@ $fecha = new DateTime();
 $imagen= $fecha->getTimestamp()."_".$imagen;
 move_uploaded_file($imagen_temporal,"imagenes/".$imagen);
 
+
+*/
+
+/*manejo de imagenes de google*/
+
+$cliente= new Google_Client();
+$cliente->useApplicationDefaultCredentials();
+$cliente->setScopes(['https://www.googleapis.com/auth/drive.file']);
+
+try{
+    $servicio = new Google_Service_Drive($cliente);
+    $imagen_temporal=$_FILES['archivo']['tmp_name'];
+
+    $archivo = new Google_Service_Drive_DriveFile();
+    $archivo->setName($_FILES['archivo']['name']);
+    $archivo->setParents(array('1L_QlewsJ5YUWY_V1d6xNapMUaJFN-0v4'));
+    $archivo->setDescription('Imagen del proyecto $nombre_proyecto');
+    $archivo->setMimeType($_FILES['archivo']['type']);
+
+    $archivo_drive = $servicio->files->create(
+        $archivo,
+        array(
+            'data' => file_get_contents($imagen_temporal),
+            'mimeType' => $_FILES['archivo']['type'],
+            'uploadType' => 'media'
+        )
+    );
+
+    $imagen = $archivo_drive->getId();
+}
+catch(Exception $e){
+    $errores = $e->getMessage();
+}
+
 #creo una instancia(objeto) de la clase de conexion
 $conexion = new conexion();
-$sql="INSERT INTO `proyectos` (`nombre`, `imagen`, `descripcion`, `direccion`, `activo`) VALUES ('$nombre_proyecto' , '$imagen', '$descripcion', '$direccion', '1')";
+$sql="INSERT INTO `proyectos` (`nombre`, `imagen`, `descripcion`, `direccion`, `activo`, `errores`) VALUES ('$nombre_proyecto' , '$imagen', '$descripcion', '$direccion', '1', '$errores')";
 $id_proyecto = $conexion->ejecutar($sql);
- #para que no intente borrar muchas veces
  header("Location:index_admin.php");
  die();
 
@@ -44,8 +84,16 @@ if($_GET){
         #recuperamos la imagen de la base antes de borrar 
         $imagen = $conexion->consultar("select imagen FROM  `proyectos` where id=".$id);
         #la borramos de la carpeta 
-        unlink("imagenes/".$imagen[0]['imagen']);
+        /*unlink("imagenes/".$imagen[0]['imagen']);*/
 
+        $cliente= new Google_Client();
+        $cliente->useApplicationDefaultCredentials();
+        $cliente->setScopes(['https://www.googleapis.com/auth/drive.file']);
+        
+        $servicio = new Google_Service_Drive($cliente);
+        $servicio->files->delete($imagen[0]['imagen']);
+
+            
         #borramos el registro de la base 
         $sql ="DELETE FROM `proyectos` WHERE `proyectos`.`id` =".$id; 
         $id_proyecto = $conexion->ejecutar($sql);
@@ -231,8 +279,8 @@ if($_GET){
                     
                         <tr >
                             <!--<td scope="row"><?php #echo $proyecto['id'];?></td> -->
-                            <td><?php echo $proyecto['nombre'];?></td>
-                            <td> <img width="200" src="imagenes/<?php echo $proyecto['imagen'];?>" alt="">  </td>
+                            <td><?php echo $proyecto['nombre'];?></td>                            
+                            <td> <img width="200" src="http://drive.google.com/uc?export=view&id=<?php echo $proyecto['imagen'];?>" alt="">  </td>
                             <td class="texto"><?php echo $proyecto['descripcion'];?></td>
                             <td class="texto"><?php if ($proyecto['activo']) { echo 'Activo'; } else {echo 'Inactivo';}?></td>
                             <td><a name="cambiarEstado" id="estado" class="btn btn-info" href="?cambiarEstado=<?php echo $proyecto['id'];?>">Cambiar<br>Estado</a></td>

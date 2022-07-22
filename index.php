@@ -289,7 +289,7 @@
                             foreach($proyectos as $proyecto){ ?>
                                 <div class="grid-item col-md-4 col-sm-6 col-xs-12 user-interface">
                                     <figure>
-                                        <img src="imagenes/<?php echo $proyecto['imagen'];?>" alt="img04">
+                                        <img src="http://drive.google.com/uc?export=view&id=<?php echo $proyecto['imagen'];?>" alt="">
                                         <figcaption class="fig-caption">
                                             <i class="fa fa-search"></i>
                                             <h5 class="title"><?php echo $proyecto['nombre'];?></h5>

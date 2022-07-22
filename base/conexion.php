@@ -1,12 +1,22 @@
 <?php class conexion{
     #atributos que son propios del objeto
+    //configuracion para base de heroku
+    /*mysql://be1962f9d6c3a2:ee992adc@us-cdbr-east-06.cleardb.net/heroku_2556fb658fb2b23?reconnect=true
+     */
     private $servidor ="us-cdbr-east-06.cleardb.net";
     private $usuario ="be1962f9d6c3a2";
     private $pass = "ee992adc";
     private $conexion;#objeto de tipo pdo, de la clase propia de php
     private $base = "heroku_2556fb658fb2b23";
-    /*mysql://be1962f9d6c3a2:ee992adc@us-cdbr-east-06.cleardb.net/heroku_2556fb658fb2b23?reconnect=true
-     */
+
+
+    //configuracion para base local
+    /*private $servidor ="localhost";
+    private $usuario ="root";
+    private $pass = "";
+    private $conexion;#objeto de tipo pdo, de la clase propia de php
+    private $base = "proyecto";
+    */
 
     public function __construct(){
         try{

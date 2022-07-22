@@ -1,4 +1,7 @@
 <?php include 'base/conexion.php';
+include 'api_google/vendor/autoload.php';
+putenv('GOOGLE_APPLICATION_CREDENTIALS=api_google/portfolio-357107-8e5c312175e3.json');
+
 ob_start(); #esto evita los errores de envios de headers
 set_error_handler("var_dump");
 session_start(); #inicializamos variables de sesion
@@ -39,17 +42,40 @@ if($_POST){
     }
     else
     {
-        $imagen = $conexion->consultar("select imagen FROM  `proyectos` where id=".$id);
-        #la borramos de la carpeta 
-        unlink("imagenes/".$imagen[0]['imagen']);
-        #tenemos que guardar la imagen en una carpeta 
+         
+        #cargamos la imagen en el drive
         $imagen_temporal=$_FILES['archivo']['tmp_name'];
-        #creamos una variable fecha para concatenar al nombre de la imagen, para que cada imagen sea distinta y no se pisen 
-        $fecha = new DateTime();
-        $imagen= $fecha->getTimestamp()."_".$imagen;
-        move_uploaded_file($imagen_temporal,"imagenes/".$imagen);
-        #creo una instancia(objeto) de la clase de conexion
+
+        $cliente= new Google_Client();
+        $cliente->useApplicationDefaultCredentials();
+        $cliente->setScopes(['https://www.googleapis.com/auth/drive.file']);
+        
+        $servicio = new Google_Service_Drive($cliente);
+        
+        $imagen_anterior = $conexion->consultar("select imagen FROM  `proyectos` where id=".$id);
+        #la borramos de la carpeta del drive
+        $servicio->files->delete($imagen_anterior[0]['imagen']);
+
+        $archivo = new Google_Service_Drive_DriveFile();
+        $archivo->setName($_FILES['archivo']['name']);
+        $archivo->setParents(array('1L_QlewsJ5YUWY_V1d6xNapMUaJFN-0v4'));
+        $archivo->setDescription('Imagen del proyecto $nombre_proyecto');
+        $archivo->setMimeType($_FILES['archivo']['type']);
+    
+        $archivo_drive = $servicio->files->create(
+            $archivo,
+            array(
+                'data' => file_get_contents($imagen_temporal),
+                'mimeType' => $_FILES['archivo']['type'],
+                'uploadType' => 'media'
+            )
+        );
+
+        
+        $imagen = $archivo_drive->getId();
+
         $sql = "UPDATE `proyectos` SET `nombre` = '$nombre_proyecto' , `imagen` = '$imagen', `descripcion` = '$descripcion', `direccion` = '$direccion' WHERE `proyectos`.`id` = '$id';";
+
     }
 
     $id_proyecto = $conexion->ejecutar($sql);
